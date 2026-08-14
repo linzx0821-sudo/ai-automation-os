@@ -55,5 +55,6 @@ class TaskRecord(BaseModel):
     error: str | None
     approval_required: bool
     approval_status: ApprovalStatus | None
+    pending_instruction: str | None
     created_at: datetime
     updated_at: datetime
