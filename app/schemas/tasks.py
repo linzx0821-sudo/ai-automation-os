@@ -25,7 +25,7 @@ class TaskContinue(BaseModel):
 class TaskEventRecord(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: UUID
+    id: int
     task_id: UUID
     event_type: str
     message: str | None
