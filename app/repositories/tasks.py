@@ -39,6 +39,6 @@ class TaskRepository:
         statement = (
             select(TaskEventModel)
             .where(TaskEventModel.task_id == task_id)
-            .order_by(TaskEventModel.created_at, TaskEventModel.id)
+            .order_by(TaskEventModel.id)
         )
         return list((await self.session.scalars(statement)).all())
