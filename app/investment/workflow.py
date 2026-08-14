@@ -44,19 +44,82 @@ Required workflow:
 10. Finish with a committee-style synthesis that states what is known, what is uncertain, what
     would change the conclusion, and what evidence should be monitored next.
 
-Workspace outputs:
+Workspace outputs (all required):
 - research/report.md: human-readable research memo.
-- research/evidence.json: structured evidence ledger with source metadata and confidence.
-- research/metrics.json: deterministic calculated metrics with formula and input provenance.
-- research/thesis.json: thesis statements, invalidation conditions, unknowns, and monitor items.
+- research/evidence.json: structured evidence ledger.
+- research/metrics.json: deterministic calculated metrics.
+- research/thesis.json: thesis statements and invalidation/monitor conditions.
+
+Machine-readable contract, schema_version must be "1.0":
+
+research/evidence.json
+{{
+  "schema_version": "1.0",
+  "generated_at": "ISO-8601 timestamp",
+  "company": {{
+    "name": "...", "ticker": "...", "exchange": "...",
+    "country": null, "currency": null, "sector": null, "industry": null,
+    "fiscal_year_end": null
+  }},
+  "documents": [{{
+    "key": "stable-local-key", "document_type": "annual_report|exchange_filing|...",
+    "source_type": "company_filing|exchange|regulator|...", "title": "...",
+    "source_url": "https://...", "published_at": null, "reporting_period": null,
+    "content_sha256": null, "metadata": {{}}
+  }}],
+  "facts": [{{
+    "key": "stable-local-key", "metric": "...", "statement": "...",
+    "primary_document_key": null, "value_numeric": null, "value_text": null,
+    "currency": null, "unit": null, "period_start": null, "period_end": null,
+    "as_of": null, "source_quote": null, "source_location": null,
+    "confidence": "high|medium|low|unknown",
+    "verification_status": "unverified|verified|conflict|insufficient",
+    "sources": [{{
+      "document_key": "...", "reported_value_numeric": null,
+      "reported_value_text": null, "variance_ratio": null,
+      "status": "supporting|conflicting|context"
+    }}]
+  }}]
+}}
+A fact may have value_numeric OR value_text, never both. All document references must resolve.
+
+research/metrics.json
+{{
+  "schema_version": "1.0",
+  "metrics": [{{
+    "metric": "...", "value_numeric": "decimal string", "currency": null,
+    "unit": null, "period_end": null, "formula": "...", "formula_version": "1.0",
+    "input_fact_keys": ["fact-key"]
+  }}]
+}}
+Every input_fact_key must exist in evidence.json. Never emit a calculated metric without its
+formula and input provenance.
+
+research/thesis.json
+{{
+  "schema_version": "1.0",
+  "theses": [{{
+    "title": "...", "statement": "...",
+    "status": "active|strengthened|weakened|invalidated|unknown",
+    "confidence": null, "evidence_fact_keys": ["fact-key"],
+    "conditions": [{{
+      "condition_type": "strengthen|weaken|invalidate|monitor",
+      "description": "...", "metric": null,
+      "operator": null, "threshold_numeric": null, "unit": null,
+      "consecutive_periods": null
+    }}]
+  }}]
+}}
+Every evidence_fact_key must exist in evidence.json. Confidence, when known, is 0..1.
 
 Quality gates:
 - No unsupported material factual claim.
 - No fabricated source, quote, price, financial figure, or management statement.
 - Keep currency and units explicit.
 - For time-sensitive facts, record the as-of timestamp.
+- JSON files must be valid strict JSON, not Markdown fenced blocks.
 - If current/reliable data cannot be obtained, state the limitation and stop short of a precise
-  valuation conclusion.
+  valuation conclusion. Still produce valid artifacts containing the verified evidence available.
 
 Final response:
 Summarize completion status, the most important findings, material disagreements/unknowns, and
