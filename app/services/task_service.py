@@ -2,10 +2,13 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.artifact import TaskArtifactModel
 from app.models.task import TaskEventModel, TaskModel
+from app.repositories.artifacts import ArtifactRepository
 from app.repositories.tasks import TaskRepository
 from app.schemas.tasks import ApprovalStatus, TaskStatus
 from app.services.approval_policy import ApprovalPolicy
+from app.services.artifact_indexer import ArtifactIndexer
 from app.services.codex_gateway import CodexGateway
 
 
@@ -23,11 +26,14 @@ class TaskService:
         session: AsyncSession,
         gateway: CodexGateway,
         approval_policy: ApprovalPolicy | None = None,
+        artifact_indexer: ArtifactIndexer | None = None,
     ) -> None:
         self.session = session
         self.repo = TaskRepository(session)
+        self.artifact_repo = ArtifactRepository(session)
         self.gateway = gateway
         self.approval_policy = approval_policy or ApprovalPolicy()
+        self.artifact_indexer = artifact_indexer
 
     async def create_and_run(self, *, goal: str, workspace: str | None) -> TaskModel:
         task = await self.repo.create(goal=goal, workspace=workspace)
@@ -65,6 +71,7 @@ class TaskService:
         await self.repo.add_event(task.id, "task.completed", "Codex execution completed")
         await self.repo.save(task)
         await self.session.commit()
+        await self._index_artifacts(task)
         return task
 
     async def _resume(self, task: TaskModel, instruction: str) -> TaskModel:
@@ -94,7 +101,26 @@ class TaskService:
         await self.repo.add_event(task.id, "task.completed", "Codex continuation completed")
         await self.repo.save(task)
         await self.session.commit()
+        await self._index_artifacts(task)
         return task
+
+    async def _index_artifacts(self, task: TaskModel) -> None:
+        if self.artifact_indexer is None:
+            return
+        try:
+            snapshots = await self.artifact_indexer.scan(task.workspace)
+            await self.artifact_repo.replace(task.id, snapshots)
+            if snapshots:
+                await self.repo.add_event(
+                    task.id,
+                    "artifacts.indexed",
+                    f"Indexed {len(snapshots)} workspace artifacts",
+                )
+            await self.session.commit()
+        except Exception as exc:  # noqa: BLE001 - artifact indexing must not fail the task
+            await self.session.rollback()
+            await self.repo.add_event(task.id, "artifacts.index_failed", str(exc))
+            await self.session.commit()
 
     async def _fail(self, task: TaskModel, exc: Exception) -> TaskModel:
         task.status = TaskStatus.failed.value
@@ -165,3 +191,7 @@ class TaskService:
     async def events(self, task_id: UUID) -> list[TaskEventModel]:
         await self.get(task_id)
         return await self.repo.list_events(task_id)
+
+    async def artifacts(self, task_id: UUID) -> list[TaskArtifactModel]:
+        await self.get(task_id)
+        return await self.artifact_repo.list(task_id)
