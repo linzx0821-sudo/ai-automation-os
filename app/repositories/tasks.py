@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from uuid import UUID
 
 from sqlalchemy import select
@@ -30,7 +32,11 @@ class TaskRepository:
         statement = select(TaskModel)
         if status is not None:
             statement = statement.where(TaskModel.status == status)
-        statement = statement.order_by(TaskModel.created_at.desc(), TaskModel.id).offset(offset).limit(limit)
+        statement = (
+            statement.order_by(TaskModel.created_at.desc(), TaskModel.id)
+            .offset(offset)
+            .limit(limit)
+        )
         return list((await self.session.scalars(statement)).all())
 
     async def save(self, task: TaskModel) -> TaskModel:
