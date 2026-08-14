@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
@@ -17,7 +17,7 @@ from app.investment.memory import ResearchArtifactImportError
 
 def _evidence() -> EvidenceArtifact:
     return EvidenceArtifact(
-        generated_at=datetime.now(timezone.utc),
+        generated_at=datetime.now(UTC),
         company=ResearchCompany(name="Acme", ticker="ACME", exchange="TEST"),
         documents=[],
         facts=[
@@ -25,7 +25,7 @@ def _evidence() -> EvidenceArtifact:
                 key="revenue",
                 metric="revenue",
                 statement="Revenue was reported.",
-                value_numeric=Decimal("100"),
+                value_numeric=Decimal(100),
                 unit="million",
                 confidence="high",
                 verification_status="verified",
@@ -67,7 +67,7 @@ def test_agent_outputs_are_written_as_valid_research_artifacts(tmp_path) -> None
     research_dir.mkdir()
     specialist = SpecialistAssessment(
         perspective="business_model",
-        score=Decimal("4"),
+        score=Decimal(4),
         confidence=Decimal("0.8"),
         conclusion="Business evidence is supportive.",
     )
