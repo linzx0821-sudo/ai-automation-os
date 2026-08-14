@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config import get_settings
 from app.db import Base
+from app.models.artifact import TaskArtifactModel  # noqa: F401
 from app.models.task import TaskEventModel, TaskModel  # noqa: F401
 
 config = context.config
