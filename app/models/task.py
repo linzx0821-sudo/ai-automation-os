@@ -19,6 +19,7 @@ class TaskModel(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     approval_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     approval_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    pending_instruction: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
