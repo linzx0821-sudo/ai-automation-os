@@ -6,15 +6,15 @@ requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.116,<1",
   "uvicorn[standard]>=0.35,<1",
-  "pydantic>=2.11,<3",
+  "pydantic>=2.12.2,<3",
   "pydantic-settings>=2.10,<3",
   "sqlalchemy>=2.0,<3",
   "psycopg[binary]>=3.2,<4",
   "aiosqlite>=0.21,<1",
   "alembic>=1.16,<2",
   "httpx>=0.28,<1",
-  "openai>=1.99,<2",
-  "openai-agents>=0.2,<1",
+  "openai>=2.36,<3",
+  "openai-agents>=0.17,<1",
   "openai-codex"
 ]
 
