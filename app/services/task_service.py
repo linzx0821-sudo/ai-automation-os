@@ -73,7 +73,7 @@ class TaskService:
         await self.repo.add_event(task.id, "task.completed", "Codex execution completed")
         await self.repo.save(task)
         await self.session.commit()
-        await self._index_artifacts(task)
+        await self.refresh_artifacts(task)
         return task
 
     async def _resume(self, task: TaskModel, instruction: str) -> TaskModel:
@@ -103,10 +103,10 @@ class TaskService:
         await self.repo.add_event(task.id, "task.completed", "Codex continuation completed")
         await self.repo.save(task)
         await self.session.commit()
-        await self._index_artifacts(task)
+        await self.refresh_artifacts(task)
         return task
 
-    async def _index_artifacts(self, task: TaskModel) -> None:
+    async def refresh_artifacts(self, task: TaskModel) -> None:
         if self.artifact_indexer is None:
             return
         try:
