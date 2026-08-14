@@ -1,7 +1,8 @@
+from datetime import datetime
 from enum import StrEnum
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TaskStatus(StrEnum):
@@ -17,13 +18,29 @@ class TaskCreate(BaseModel):
     workspace: str | None = None
 
 
-class TaskRecord(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    goal: str
-    status: TaskStatus = TaskStatus.queued
-    codex_thread_id: str | None = None
-    result: str | None = None
-
-
 class TaskContinue(BaseModel):
     instruction: str = Field(min_length=1)
+
+
+class TaskEventRecord(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    task_id: UUID
+    event_type: str
+    message: str | None
+    created_at: datetime
+
+
+class TaskRecord(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    goal: str
+    workspace: str | None
+    status: TaskStatus
+    codex_thread_id: str | None
+    result: str | None
+    error: str | None
+    created_at: datetime
+    updated_at: datetime
