@@ -23,7 +23,7 @@ class CodexGateway(Protocol):
 
 
 class StubCodexGateway:
-    """Deterministic interface-compatible adapter for tests and local API work."""
+    """Interface-compatible adapter for tests and local API work."""
 
     async def start(self, goal: str, workspace: str | None = None) -> CodexRunResult:
         return CodexRunResult(
@@ -46,8 +46,11 @@ class SDKCodexGateway:
     workspaces: WorkspaceManager
 
     async def _authenticate(self, codex: AsyncCodex) -> None:
-        if self.settings.codex_api_key is not None:
-            await codex.login_api_key(self.settings.codex_api_key.get_secret_value())
+        if self.settings.codex_api_key is None:
+            return
+        api_key = self.settings.codex_api_key.get_secret_value().strip()
+        if api_key:
+            await codex.login_api_key(api_key)
 
     async def start(self, goal: str, workspace: str | None = None) -> CodexRunResult:
         cwd = await self.workspaces.prepare(workspace)
