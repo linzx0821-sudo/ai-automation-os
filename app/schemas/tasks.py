@@ -43,6 +43,18 @@ class TaskEventRecord(BaseModel):
     created_at: datetime
 
 
+class TaskArtifactRecord(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    task_id: UUID
+    path: str
+    media_type: str
+    size_bytes: int
+    sha256: str
+    created_at: datetime
+
+
 class TaskRecord(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
