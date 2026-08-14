@@ -35,7 +35,7 @@ class TaskService:
 
         try:
             result = await self.gateway.start(goal, workspace)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - execution boundary must persist failures
             task.status = TaskStatus.failed.value
             task.error = str(exc)
             await self.repo.add_event(task.id, "task.failed", task.error)
@@ -75,7 +75,7 @@ class TaskService:
                 instruction,
                 task.workspace,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - execution boundary must persist failures
             task.status = TaskStatus.failed.value
             task.error = str(exc)
             await self.repo.add_event(task.id, "task.failed", task.error)
