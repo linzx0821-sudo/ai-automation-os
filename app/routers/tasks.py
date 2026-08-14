@@ -1,11 +1,8 @@
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException
 
-from app.db import get_session
-from app.dependencies import get_codex_gateway
+from app.dependencies import TaskServiceDep
 from app.schemas.tasks import (
     ApprovalAction,
     TaskContinue,
@@ -13,20 +10,9 @@ from app.schemas.tasks import (
     TaskEventRecord,
     TaskRecord,
 )
-from app.services.codex_gateway import CodexGateway
-from app.services.task_service import TaskConflictError, TaskNotFoundError, TaskService
+from app.services.task_service import TaskConflictError, TaskNotFoundError
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
-
-
-async def get_task_service(
-    session: Annotated[AsyncSession, Depends(get_session)],
-    gateway: Annotated[CodexGateway, Depends(get_codex_gateway)],
-) -> TaskService:
-    return TaskService(session=session, gateway=gateway)
-
-
-TaskServiceDep = Annotated[TaskService, Depends(get_task_service)]
 
 
 @router.post("", response_model=TaskRecord)
