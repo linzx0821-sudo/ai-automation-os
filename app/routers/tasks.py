@@ -1,49 +1,62 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.tasks import TaskContinue, TaskCreate, TaskRecord, TaskStatus
-from app.services.codex_gateway import StubCodexGateway
+from app.db import get_session
+from app.dependencies import get_codex_gateway
+from app.schemas.tasks import TaskContinue, TaskCreate, TaskEventRecord, TaskRecord
+from app.services.codex_gateway import CodexGateway
+from app.services.task_service import TaskConflictError, TaskNotFoundError, TaskService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
-_gateway = StubCodexGateway()
-_tasks: dict[UUID, TaskRecord] = {}
+
+
+async def get_task_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    gateway: Annotated[CodexGateway, Depends(get_codex_gateway)],
+) -> TaskService:
+    return TaskService(session=session, gateway=gateway)
+
+
+TaskServiceDep = Annotated[TaskService, Depends(get_task_service)]
 
 
 @router.post("", response_model=TaskRecord)
-async def create_task(payload: TaskCreate) -> TaskRecord:
-    task = TaskRecord(goal=payload.goal, status=TaskStatus.running)
-    _tasks[task.id] = task
-    try:
-        result = await _gateway.start(payload.goal, payload.workspace)
-        task.codex_thread_id = result.thread_id
-        task.result = result.final_response
-        task.status = TaskStatus.completed
-    except Exception as exc:  # pragma: no cover - replaced with structured errors in next milestone
-        task.status = TaskStatus.failed
-        task.result = str(exc)
-    return task
+async def create_task(payload: TaskCreate, service: TaskServiceDep) -> TaskRecord:
+    task = await service.create_and_run(goal=payload.goal, workspace=payload.workspace)
+    return TaskRecord.model_validate(task)
 
 
 @router.get("/{task_id}", response_model=TaskRecord)
-async def get_task(task_id: UUID) -> TaskRecord:
-    task = _tasks.get(task_id)
-    if task is None:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
+async def get_task(task_id: UUID, service: TaskServiceDep) -> TaskRecord:
+    try:
+        task = await service.get(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Task not found") from exc
+    return TaskRecord.model_validate(task)
+
+
+@router.get("/{task_id}/events", response_model=list[TaskEventRecord])
+async def get_task_events(task_id: UUID, service: TaskServiceDep) -> list[TaskEventRecord]:
+    try:
+        events = await service.events(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Task not found") from exc
+    return [TaskEventRecord.model_validate(event) for event in events]
 
 
 @router.post("/{task_id}/continue", response_model=TaskRecord)
-async def continue_task(task_id: UUID, payload: TaskContinue) -> TaskRecord:
-    task = _tasks.get(task_id)
-    if task is None:
-        raise HTTPException(status_code=404, detail="Task not found")
-    if not task.codex_thread_id:
-        raise HTTPException(status_code=409, detail="Task has no Codex thread")
-
-    task.status = TaskStatus.running
-    result = await _gateway.resume(task.codex_thread_id, payload.instruction)
-    task.codex_thread_id = result.thread_id
-    task.result = result.final_response
-    task.status = TaskStatus.completed
-    return task
+async def continue_task(
+    task_id: UUID,
+    payload: TaskContinue,
+    service: TaskServiceDep,
+) -> TaskRecord:
+    try:
+        task = await service.continue_and_run(task_id, payload.instruction)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Task not found") from exc
+    except TaskConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return TaskRecord.model_validate(task)
