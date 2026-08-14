@@ -24,6 +24,15 @@ async def init_db() -> None:
     # Import models before metadata creation. Alembic owns production schema upgrades;
     # create_all keeps local/test startup friction low.
     from app.models.artifact import TaskArtifactModel  # noqa: F401
+    from app.models.investment import (  # noqa: F401
+        CompanyModel,
+        DocumentModel,
+        FactModel,
+        FactSourceModel,
+        FinancialMetricModel,
+        InvestmentThesisModel,
+        ThesisConditionModel,
+    )
     from app.models.task import TaskEventModel, TaskModel  # noqa: F401
 
     async with engine.begin() as conn:
