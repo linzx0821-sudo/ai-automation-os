@@ -11,6 +11,13 @@ class TaskStatus(StrEnum):
     waiting_approval = "waiting_approval"
     completed = "completed"
     failed = "failed"
+    cancelled = "cancelled"
+
+
+class ApprovalStatus(StrEnum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
 
 
 class TaskCreate(BaseModel):
@@ -20,6 +27,10 @@ class TaskCreate(BaseModel):
 
 class TaskContinue(BaseModel):
     instruction: str = Field(min_length=1)
+
+
+class ApprovalAction(BaseModel):
+    note: str | None = Field(default=None, max_length=1000)
 
 
 class TaskEventRecord(BaseModel):
@@ -42,5 +53,7 @@ class TaskRecord(BaseModel):
     codex_thread_id: str | None
     result: str | None
     error: str | None
+    approval_required: bool
+    approval_status: ApprovalStatus | None
     created_at: datetime
     updated_at: datetime
