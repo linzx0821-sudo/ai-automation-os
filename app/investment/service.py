@@ -1,4 +1,4 @@
-from app.investment.memory import ResearchArtifactImportError, ResearchArtifactImporter
+from app.investment.memory import ResearchArtifactImporter, ResearchArtifactImportError
 from app.investment.schemas import InvestmentResearchRequest
 from app.investment.workflow import InvestmentResearchWorkflow
 from app.models.task import TaskModel
