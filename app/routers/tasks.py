@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from app.dependencies import TaskServiceDep
 from app.schemas.tasks import (
     ApprovalAction,
+    TaskArtifactRecord,
     TaskContinue,
     TaskCreate,
     TaskEventRecord,
@@ -37,6 +38,18 @@ async def get_task_events(task_id: UUID, service: TaskServiceDep) -> list[TaskEv
     except TaskNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Task not found") from exc
     return [TaskEventRecord.model_validate(event) for event in events]
+
+
+@router.get("/{task_id}/artifacts", response_model=list[TaskArtifactRecord])
+async def get_task_artifacts(
+    task_id: UUID,
+    service: TaskServiceDep,
+) -> list[TaskArtifactRecord]:
+    try:
+        artifacts = await service.artifacts(task_id)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Task not found") from exc
+    return [TaskArtifactRecord.model_validate(artifact) for artifact in artifacts]
 
 
 @router.post("/{task_id}/continue", response_model=TaskRecord)
