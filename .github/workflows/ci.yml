@@ -19,5 +19,13 @@ jobs:
         run: pip install -e ".[dev]"
       - name: Lint
         run: ruff check .
+      - name: Migration smoke test
+        env:
+          DATABASE_URL: sqlite+aiosqlite:///./migration-test.db
+        run: |
+          rm -f migration-test.db
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
       - name: Test
         run: pytest -q
