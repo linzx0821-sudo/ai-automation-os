@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.db import get_session
+from app.investment.agents import InvestmentAgentOrchestrator
 from app.investment.memory import ResearchArtifactImporter
 from app.investment.query import InvestmentQueryService
 from app.investment.service import InvestmentResearchService
@@ -37,6 +38,15 @@ def _research_importer_singleton() -> ResearchArtifactImporter:
     return ResearchArtifactImporter(root=get_settings().codex_workspace_root)
 
 
+@lru_cache
+def _investment_agent_orchestrator_singleton() -> InvestmentAgentOrchestrator:
+    settings = get_settings()
+    return InvestmentAgentOrchestrator(
+        model=settings.investment_agent_model,
+        max_turns=settings.investment_agent_max_turns,
+    )
+
+
 async def get_task_service(
     session: Annotated[AsyncSession, Depends(get_session)],
     gateway: Annotated[CodexGateway, Depends(get_codex_gateway)],
@@ -54,9 +64,12 @@ TaskServiceDep = Annotated[TaskService, Depends(get_task_service)]
 def get_investment_research_service(
     task_service: TaskServiceDep,
 ) -> InvestmentResearchService:
+    settings = get_settings()
     return InvestmentResearchService(
         task_service=task_service,
         importer=_research_importer_singleton(),
+        orchestrator=_investment_agent_orchestrator_singleton(),
+        workspace_root=settings.codex_workspace_root,
     )
 
 
