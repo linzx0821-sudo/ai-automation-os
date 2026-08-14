@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -25,14 +25,14 @@ class TaskModel(Base):
     )
 
     events: Mapped[list["TaskEventModel"]] = relationship(
-        back_populates="task", cascade="all, delete-orphan", order_by="TaskEventModel.created_at"
+        back_populates="task", cascade="all, delete-orphan", order_by="TaskEventModel.id"
     )
 
 
 class TaskEventModel(Base):
     __tablename__ = "task_events"
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     task_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True
     )
