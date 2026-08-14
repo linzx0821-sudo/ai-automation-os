@@ -119,6 +119,7 @@ class TaskService:
             await self.session.commit()
         except Exception as exc:  # noqa: BLE001 - artifact indexing must not fail the task
             await self.session.rollback()
+            await self.session.refresh(task)
             await self.repo.add_event(task.id, "artifacts.index_failed", str(exc))
             await self.session.commit()
 
@@ -135,6 +136,19 @@ class TaskService:
         if task is None:
             raise TaskNotFoundError(str(task_id))
         return task
+
+    async def list(
+        self,
+        *,
+        status: TaskStatus | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[TaskModel]:
+        return await self.repo.list(
+            status=status.value if status is not None else None,
+            limit=limit,
+            offset=offset,
+        )
 
     async def continue_and_run(self, task_id: UUID, instruction: str) -> TaskModel:
         task = await self.get(task_id)
