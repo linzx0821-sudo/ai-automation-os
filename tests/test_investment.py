@@ -19,7 +19,8 @@ def test_investment_research_creates_evidence_first_codex_task() -> None:
     task = response.json()
     assert task["status"] == "completed"
     assert task["workspace"].startswith("investment/tencent-holdings-")
-    assert "evidence ledger" in task["goal"].lower()
+    assert "evidence-collection worker" in task["goal"].lower()
     assert "Do not place" in task["goal"]
     assert "Python Decimal" in task["goal"]
+    assert "Do NOT generate research/thesis.json" in task["goal"]
     assert task["approval_required"] is False
