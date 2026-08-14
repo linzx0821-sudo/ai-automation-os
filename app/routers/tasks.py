@@ -1,6 +1,7 @@
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.dependencies import TaskServiceDep
 from app.schemas.tasks import (
@@ -10,6 +11,7 @@ from app.schemas.tasks import (
     TaskCreate,
     TaskEventRecord,
     TaskRecord,
+    TaskStatus,
 )
 from app.services.task_service import TaskConflictError, TaskNotFoundError
 
@@ -20,6 +22,17 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 async def create_task(payload: TaskCreate, service: TaskServiceDep) -> TaskRecord:
     task = await service.create_and_run(goal=payload.goal, workspace=payload.workspace)
     return TaskRecord.model_validate(task)
+
+
+@router.get("", response_model=list[TaskRecord])
+async def list_tasks(
+    service: TaskServiceDep,
+    status: TaskStatus | None = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[TaskRecord]:
+    tasks = await service.list(status=status, limit=limit, offset=offset)
+    return [TaskRecord.model_validate(task) for task in tasks]
 
 
 @router.get("/{task_id}", response_model=TaskRecord)
