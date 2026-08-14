@@ -22,6 +22,10 @@ def test_task_create_get_continue_and_events() -> None:
         assert fetched.status_code == 200
         assert fetched.json()["id"] == task_id
 
+        artifacts = client.get(f"/api/v1/tasks/{task_id}/artifacts")
+        assert artifacts.status_code == 200
+        assert artifacts.json() == []
+
         continued = client.post(
             f"/api/v1/tasks/{task_id}/continue",
             json={"instruction": "Continue with the next safe step"},
@@ -54,6 +58,12 @@ def test_high_impact_task_waits_for_approval_then_runs() -> None:
         assert task["approval_required"] is True
         assert task["approval_status"] == "pending"
         assert task["codex_thread_id"] is None
+
+        waiting = client.get("/api/v1/tasks", params={"status": "waiting_approval"})
+        assert waiting.status_code == 200
+        waiting_tasks = waiting.json()
+        assert task["id"] in {item["id"] for item in waiting_tasks}
+        assert all(item["status"] == "waiting_approval" for item in waiting_tasks)
 
         approved = client.post(
             f"/api/v1/tasks/{task['id']}/approve",
