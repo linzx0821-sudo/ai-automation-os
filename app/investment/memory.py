@@ -75,14 +75,18 @@ class ResearchArtifactImporter:
             raise ResearchArtifactImportError("Research output directory is missing")
         return research_dir
 
-    def _load_contract(self, path: Path, contract_type: type[EvidenceArtifact | MetricsArtifact | ThesisArtifact]):
+    def _load_contract(
+        self,
+        path: Path,
+        contract_type: type[EvidenceArtifact | MetricsArtifact | ThesisArtifact],
+    ):
         if not path.is_file():
             raise ResearchArtifactImportError(f"Required research artifact is missing: {path.name}")
         if path.stat().st_size > self.max_json_bytes:
             raise ResearchArtifactImportError(f"Research artifact exceeds size limit: {path.name}")
         try:
             return contract_type.model_validate_json(path.read_bytes())
-        except Exception as exc:  # noqa: BLE001 - convert parser/validation errors at trust boundary
+        except Exception as exc:
             raise ResearchArtifactImportError(f"Invalid {path.name}: {exc}") from exc
 
     async def _upsert_company(
