@@ -14,41 +14,38 @@ class InvestmentResearchWorkflow:
         workspace = f"investment/{slug}-{digest}"
 
         focus = request.focus or "Full company research"
-        goal = f"""Investment OS company research task
+        goal = f"""Investment OS evidence-collection task
 
 Target: {identity}
 Focus: {focus}
 
-Mission:
-Produce an evidence-first investment research package. This is research only. Do not place,
-simulate, recommend executing, or automate any brokerage trade.
+Your role:
+You are the execution and evidence-collection worker, not the investment committee. Collect,
+normalize, verify, and calculate. A separate multi-agent reasoning layer will analyze your outputs.
+This is research only. Do not place, simulate, recommend executing, or automate a brokerage trade.
 
 Required workflow:
-1. Resolve the exact listed company/security before using any market or financial data.
-2. Build an evidence ledger. Every material factual claim must retain source, publication date,
-   reporting period, currency/unit, and confidence.
-3. Prefer primary sources: company filings, annual/interim reports, exchange/regulator filings,
-   investor relations material, and earnings-call transcripts. Use secondary sources only as
-   supplemental evidence.
-4. Cross-check key financial figures with a second independent source when practical. If values
-   differ materially, preserve both values and investigate instead of silently choosing one.
-5. Analyze independently across these functions: business model, moat/competition, financial
-   quality, management/capital allocation, industry structure, valuation, long-term risks, and a
-   dedicated bearish/red-team case.
-6. Separate FACT, INFERENCE, ASSUMPTION, and UNKNOWN. Unknowns must stay unknown; never invent a
-   number or citation to complete a template.
-7. Do not trust LLM mental arithmetic for investment metrics. Use Python Decimal or an equivalent
-   deterministic decimal calculation and preserve inputs/formulas.
-8. Run an inversion check: identify concrete scenarios that could invalidate the thesis.
-9. Surface disagreements between research functions rather than averaging them away.
-10. Finish with a committee-style synthesis that states what is known, what is uncertain, what
-    would change the conclusion, and what evidence should be monitored next.
+1. Resolve the exact listed company/security before using market or financial data.
+2. Collect primary evidence first: company filings, annual/interim reports, regulator/exchange
+   filings, investor-relations materials and earnings-call materials. Secondary sources may only
+   supplement primary evidence.
+3. Build a fact ledger. Every material fact must retain source URL, publication/reporting date,
+   currency/unit, source location when available, and confidence.
+4. Cross-check key financial values with a second independent source when practical. If two values
+   materially disagree, preserve the conflict rather than silently choosing one.
+5. Never fabricate a source, quote, price, financial value, management statement, or date.
+6. Do not use LLM mental arithmetic for financial metrics. Use Python Decimal or an equivalent
+   deterministic decimal implementation. Preserve formulas and input fact keys.
+7. Keep FACT and UNKNOWN distinct. Do not write investment theses or a buy/sell recommendation.
+8. For time-sensitive values, record an explicit as-of timestamp.
 
-Workspace outputs (all required):
-- research/report.md: human-readable research memo.
-- research/evidence.json: structured evidence ledger.
-- research/metrics.json: deterministic calculated metrics.
-- research/thesis.json: thesis statements and invalidation/monitor conditions.
+Workspace outputs required from Codex:
+- research/evidence.json: normalized source documents and fact ledger.
+- research/metrics.json: deterministic calculated metrics with formula/input provenance.
+- research/collection_notes.md: collection limitations, source conflicts and unresolved data gaps.
+
+Do NOT generate research/thesis.json or the final research/report.md. The downstream Investment
+Agents and Committee own those outputs.
 
 Machine-readable contract, schema_version must be "1.0":
 
@@ -81,7 +78,7 @@ research/evidence.json
     }}]
   }}]
 }}
-A fact may have value_numeric OR value_text, never both. All document references must resolve.
+A fact may have value_numeric OR value_text, never both. Every document reference must resolve.
 
 research/metrics.json
 {{
@@ -95,34 +92,15 @@ research/metrics.json
 Every input_fact_key must exist in evidence.json. Never emit a calculated metric without its
 formula and input provenance.
 
-research/thesis.json
-{{
-  "schema_version": "1.0",
-  "theses": [{{
-    "title": "...", "statement": "...",
-    "status": "active|strengthened|weakened|invalidated|unknown",
-    "confidence": null, "evidence_fact_keys": ["fact-key"],
-    "conditions": [{{
-      "condition_type": "strengthen|weaken|invalidate|monitor",
-      "description": "...", "metric": null,
-      "operator": null, "threshold_numeric": null, "unit": null,
-      "consecutive_periods": null
-    }}]
-  }}]
-}}
-Every evidence_fact_key must exist in evidence.json. Confidence, when known, is 0..1.
-
 Quality gates:
 - No unsupported material factual claim.
-- No fabricated source, quote, price, financial figure, or management statement.
-- Keep currency and units explicit.
-- For time-sensitive facts, record the as-of timestamp.
-- JSON files must be valid strict JSON, not Markdown fenced blocks.
-- If current/reliable data cannot be obtained, state the limitation and stop short of a precise
-  valuation conclusion. Still produce valid artifacts containing the verified evidence available.
+- No fabricated citation or numeric value.
+- Currency and units must be explicit.
+- JSON must be strict JSON, not Markdown fenced blocks.
+- If reliable current data is unavailable, record the gap and do not invent a substitute.
 
 Final response:
-Summarize completion status, the most important findings, material disagreements/unknowns, and
-exact paths of generated workspace artifacts. Do not give an instruction to buy or sell.
+Report only collection completion, important source conflicts/data gaps, and the exact artifact
+paths. Do not provide an investment conclusion or transaction instruction.
 """
         return InvestmentResearchPlan(company=request.company, workspace=workspace, task_goal=goal)
