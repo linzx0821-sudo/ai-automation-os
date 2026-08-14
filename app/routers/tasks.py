@@ -6,7 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_session
 from app.dependencies import get_codex_gateway
-from app.schemas.tasks import TaskContinue, TaskCreate, TaskEventRecord, TaskRecord
+from app.schemas.tasks import (
+    ApprovalAction,
+    TaskContinue,
+    TaskCreate,
+    TaskEventRecord,
+    TaskRecord,
+)
 from app.services.codex_gateway import CodexGateway
 from app.services.task_service import TaskConflictError, TaskNotFoundError, TaskService
 
@@ -55,6 +61,36 @@ async def continue_task(
 ) -> TaskRecord:
     try:
         task = await service.continue_and_run(task_id, payload.instruction)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Task not found") from exc
+    except TaskConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return TaskRecord.model_validate(task)
+
+
+@router.post("/{task_id}/approve", response_model=TaskRecord)
+async def approve_task(
+    task_id: UUID,
+    payload: ApprovalAction,
+    service: TaskServiceDep,
+) -> TaskRecord:
+    try:
+        task = await service.approve(task_id, payload.note)
+    except TaskNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Task not found") from exc
+    except TaskConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return TaskRecord.model_validate(task)
+
+
+@router.post("/{task_id}/reject", response_model=TaskRecord)
+async def reject_task(
+    task_id: UUID,
+    payload: ApprovalAction,
+    service: TaskServiceDep,
+) -> TaskRecord:
+    try:
+        task = await service.reject(task_id, payload.note)
     except TaskNotFoundError as exc:
         raise HTTPException(status_code=404, detail="Task not found") from exc
     except TaskConflictError as exc:
