@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ai_automation
+      POSTGRES_USER: ai_automation
+      POSTGRES_PASSWORD: ai_automation
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_automation -d ai_automation"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+psycopg://ai_automation:ai_automation@db:5432/ai_automation
+      CODEX_BACKEND: ${CODEX_BACKEND:-stub}
+      CODEX_MODEL: ${CODEX_MODEL:-}
+      CODEX_API_KEY: ${CODEX_API_KEY:-}
+      CODEX_WORKSPACE_ROOT: /workspaces
+      CODEX_DEFAULT_WORKSPACE: default
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - codex-home:/root/.codex
+      - codex-workspaces:/workspaces
+
+volumes:
+  postgres-data:
+  codex-home:
+  codex-workspaces:
