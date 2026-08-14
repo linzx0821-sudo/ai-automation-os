@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     codex_workspace_root: Path = Path("./workspaces")
     codex_default_workspace: str = "default"
 
+    investment_agent_model: str | None = None
+    investment_agent_max_turns: int = 6
+
 
 @lru_cache
 def get_settings() -> Settings:
