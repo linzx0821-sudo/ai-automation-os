@@ -61,7 +61,7 @@ class InvestmentResearchService:
             await self.task_service.session.commit()
 
             # Re-index because the reasoning layer writes report.md, thesis.json and analysis JSON.
-            await self.task_service._index_artifacts(task)
+            await self.task_service.refresh_artifacts(task)
 
             summary = await self.importer.import_workspace(
                 self.task_service.session,
