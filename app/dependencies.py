@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.db import get_session
 from app.investment.memory import ResearchArtifactImporter
+from app.investment.query import InvestmentQueryService
 from app.investment.service import InvestmentResearchService
 from app.services.artifact_indexer import ArtifactIndexer
 from app.services.codex_gateway import CodexGateway, build_codex_gateway
@@ -62,4 +63,16 @@ def get_investment_research_service(
 InvestmentResearchServiceDep = Annotated[
     InvestmentResearchService,
     Depends(get_investment_research_service),
+]
+
+
+async def get_investment_query_service(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> InvestmentQueryService:
+    return InvestmentQueryService(session)
+
+
+InvestmentQueryServiceDep = Annotated[
+    InvestmentQueryService,
+    Depends(get_investment_query_service),
 ]
